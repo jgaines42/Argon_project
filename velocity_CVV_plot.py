@@ -32,7 +32,7 @@ average_auto = np.divide(average_auto, NUMBER_ATOMS)
 # Make time data
 all_steps = np.zeros([len(data)])
 for i in range(0,len(average_auto)):
-    all_steps[i] = i*DT
+    all_steps[i] = i*DT         # in ps
 
 # Plot CVV(t)
 plt.figure(figsize=(15,8))
@@ -42,7 +42,7 @@ plt.ylabel('$C_{vv}(t), (\mathrm{m^2/s^2})$')
 plt.plot(all_steps,average_auto, 'k')
 plt.plot([0, 1.5], [0, 0])
 plt.axis([0, 1.5, -10000,60000])
-plt.show()
+#plt.show()
 plt.savefig('Ar_CVV.png', bbox_inches='tight')
 
 
@@ -53,17 +53,19 @@ plt.xlabel('time (ps)')
 plt.ylabel('$C_{vv}(t), (\mathrm{m^2/s^2})$')
 plt.plot([0, 1.5], [0, 0])
 plt.axis([0, 1.5, -0.2,1])
+#plt.show()
 plt.savefig('Ar_CVV_normalized.png', bbox_inches='tight')
-plt.show()
 
-# # Calculate Diffusion coefficient
-# D = np.sum(average_auto[0:150])/3.0 *DT_fs # m^2/s
-# D = D*(100*100)
-# print(D)
 np.savetxt('Ar_CVV_data.txt', average_auto)
 
+
+# Use time in seconds to fit data
+all_steps = np.zeros([len(data)])
+for i in range(0,len(average_auto)):
+    all_steps[i] = i*DT_fs         # in s
+
 # Fit tail of data to exponential
-popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[100:200], average_auto[100:200], p0=[-8000.0,-2.0])
+popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[100:200], average_auto[100:200], p0=[-20000,-3E12])
 perr_exponential = np.sqrt(np.diag(pcov_exponential))
 print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
 print("rate constant = %0.2f (+/-) %0.2f" % (popt_exponential[1], perr_exponential[1]))
@@ -74,38 +76,23 @@ plt.plot(all_steps[40:200], exponential(all_steps[40:200], popt_exponential[0], 
 plt.plot(all_steps[40:200],average_auto[40:200])
 plt.show()
 
-# intergral -> 1/k *exp(kx)
 
 # Extract k and a and convert k to seconds
-k = popt_exponential[1] # 1/ps
+k = popt_exponential[1] # 1/s
 a = popt_exponential[0] # m^2
-k = k*1.0E12            # 1/s
 
 
 # Integrate from all_steps[150] to infinity
+# intergral -> 1/k *exp(kx)
 
-end_step = all_steps[199]/(1.0E12) # because k is in 1/ps, make time in ps
+end_step = all_steps[199]+DT_fs
+integral_15 = np.sum(average_auto[0:200])*DT_fs     # m^2/s
+integral_15p = 0.0-(1.0/k*a*math.exp(k*end_step))   # m^2/ps
 
-integral_15 = np.sum(average_auto[0:200])*DT_fs #m^2/s
-integral_15p = 0.0-(1.0/k*a*math.exp(k*all_steps[199]*1.0E-12))    #m^2/s
-print(integral_15)
-print(integral_15p)
+print(integral_15*(100*100) )
+print(integral_15p*(100*100) )
 
-# # Extract k and a and convert k to seconds
-# k = popt_exponential[1] # 1/ps
-# a = popt_exponential[0] # m^2
-# k = k*1.0E12            # 1/s
-
-
-# # Integrate from all_steps[150] to infinity
-
-# end_step = all_steps[199]/(1.0E12) # because k is in 1/ps, make time in ps
-
-# integral_15 = np.sum(average_auto[0:200])*DT_fs #m^2/s
-# integral_15p = 0.0-(1.0/k*a*math.exp(k*all_steps[199]*1.0E-12))    #m^2/s
-# print(integral_15)
-# print(integral_15p)
-
+# Calculate diffusion coefficient
 D = (integral_15+integral_15p)/3.0 # m^2/s
 D = (D)*(100*100)                  # cm^2/s
 print(D)

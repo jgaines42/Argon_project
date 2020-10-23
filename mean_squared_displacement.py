@@ -3,7 +3,7 @@
 #############################################
 
 def linear(x, a, b):
-    return a*x + b
+    return a*x +b
 
 import numpy as np  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
@@ -23,11 +23,13 @@ for step_loop in range(0, 300):
     data[step_loop] = data[step_loop]/natoms/num_runs*(1E20) # mean squared displacement in Angstroms^2
 
 # Fit linear section to calculate diffusion coeficient
-popt_linear, pcov_linear = scipy.optimize.curve_fit(linear, all_steps[100:300], data[100:300], p0=[8000.0,0])
+popt_linear, pcov_linear = scipy.optimize.curve_fit(linear, all_steps[150:300], data[150:300], p0=[8000.0, 0])
 perr_linear = np.sqrt(np.diag(pcov_linear))
 print("slope = %0.2f (+/-) %0.2f" % (popt_linear[0], perr_linear[0]))
 print("intercept= %0.2f (+/-) %0.2f" % (popt_linear[1], perr_linear[1]))
 
+m = popt_linear[0]
+b = popt_linear[1]
 diffusion = popt_linear[0]/6.0 # diffusion in A^2/ps
 print(diffusion*100.0*100.0*(1E12)/(1E20)) # Difusion in cm^2/s
 
@@ -35,7 +37,7 @@ print(diffusion*100.0*100.0*(1E12)/(1E20)) # Difusion in cm^2/s
 plt.figure(figsize=(15,8))
 plt.rcParams.update({'font.size': 20})
 plt.plot(all_steps,data, 'k',label='Data')
-plt.plot([0, 3],[popt_linear[1],3.0*popt_linear[0]+popt_linear[1]], '--b',label='Fit')
+plt.plot([0, 3],[b,b+3.0*m], '--b',label='Fit')
 plt.axis([0, 3, 0, 5])
 plt.xlabel('Time (ps)')
 plt.ylabel('Mean squared displacement ($\AA ^2$)')

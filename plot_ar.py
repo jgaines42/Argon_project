@@ -47,11 +47,11 @@ data2 = data2*dt_NVT                # Time in NVT
 
 # Plot NVE temperature
 plt.figure(figsize=(15,8))
-plt.plot(data4, data3, '.k')
+plt.plot(data4, data3, 'k')
 plt.xlabel('time (ps)')
 plt.ylabel('Temperature (K)')
 plt.axis([0, 500, 86, 100])
-plt.plot([0, 500], [np.mean(data3),np.mean(data3)], 'r')
+plt.plot([0, 500], [np.mean(data3[10000:50000]),np.mean(data3[10000:50000])], 'r')
 plt.plot([0, 500], [94.4, 94.4], '--r')
 
 plt.savefig('Ar_Temp_NVE.png', bbox_inches='tight')
@@ -75,11 +75,11 @@ plt.savefig('Ar_Temp_all.png', bbox_inches='tight')
 plt.show()
 
 # Print average and std of temp of NVE
-print(np.mean(data3))
-print(np.std(data3))
+print(np.mean(data3[10000:50000]))
+print(np.std(data3[10000:50000]))
 
 # Calculate average temp in NVE
-mean_temp = np.mean(data3)
+mean_temp = np.mean(data3[10000:50000])
 
 # Plot 100 time step moving average of Temp
 
