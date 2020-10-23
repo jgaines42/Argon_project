@@ -122,7 +122,7 @@
       PARAMETER (massAr=39.95/1000*1.6747E-24)
 
       INTEGER nstep                     ! number of steps in the simulation
-      PARAMETER (nstep=60000)
+      PARAMETER (nstep=100000)
 
       INTEGER nsave                     ! frequency to save data
       PARAMETER (nsave=10)
@@ -191,15 +191,15 @@
 
       ! Variables for g(r)
       INTEGER nGrBins,ibin
-      PARAMETER (nGrBins=500)
+      PARAMETER (nGrBins=500)             ! number of g(r) bins
       REAL*8 bin_ends(nGrBins)            ! the edge value of each bin for g(r)
       REAL*8 g_of_r(nGrBins)              ! g(r) data
-      REAL*8 gr_bin_W,dmax
-      PARAMETER (gr_bin_W=0.01E-10,dmax=REAL(nGrBins)*gr_bin_W)
+      REAL*8 gr_bin_W,dmax                ! width of each bin (A)
+      PARAMETER (gr_bin_W=0.05E-10,dmax=REAL(nGrBins)*gr_bin_W)
 
       ! Variables for CVV
       INTEGER CVV_size                    ! Number of delta T time points
-      PARAMETER (CVV_size=150)
+      PARAMETER (CVV_size=200)
       REAL*8 vel_store(CVV_size,natom,3)  ! Store last N velocities
       REAL*8 CVV_data(CVV_size)           ! CVV values
       INTEGER CVV_I1, CVV_I2,CVV_loop     ! Looping variables
@@ -242,9 +242,9 @@
       is_NVT=1
       KE = 0.0
       V_tot = 0.0
-      start_NVE = 10000
+      start_NVE = 10000                       ! Start in NVT to check equilibration
       time = 0.0
-
+      
       !-------------------------------------------------------------
       ! Read in initial file
       !-------------------------------------------------------------
@@ -268,24 +268,19 @@
       DO I=1,natom
          DO K=1,3                           ! Loop over x,y,z components
             pos(I,K)=pos(I,K)*1.0E-9        ! from nm to m
-            vel(I,K)=vel(I,K)*1.0E2         ! from nm/ps to m/s
+            vel(I,K)=vel(I,K)*1.0E2         ! to m/s
             accel(I,K) = 0.0                ! initialize acceleration to 0
             force(I,K) = 0.0                ! initialize forces to 0
          END DO
       END DO
 
-C       KE = kinetic_energy(natom, vel,massAr)
-C       temp = (KE*KE_Temp)
-
       ! Prevent flying ice cube
       vel_sum = shift_vel_com(natom, vel)
 
-
        ! Initialize g_of_r data
-
        DO I=1,nGrBins
          g_of_r(i) = 0.0
-         bin_ends(i) = (0.01*sigma*I)
+         bin_ends(i) = (gr_bin_W*I)
        END DO
        
        ! Initialize CVV data
@@ -304,6 +299,7 @@ C       temp = (KE*KE_Temp)
       DO time_loop=1,nstep
         time = time+dt                       ! Calculate current time
 
+        ! Change to NVE after start_NVE
         if (time_loop > start_NVE) then
           is_NVT=0
         end if
@@ -346,17 +342,22 @@ C       temp = (KE*KE_Temp)
                  force(i,K) = force(i,K) + this_force(K)
                  force(j,K) = force(j,K) - this_force(K)
               END DO ! end K: force vectors
+            END if  ! end if dist_ij < cutoffSQ
+
+            IF (is_NVT == 0) THEN
 
               ! Add to g(r) data if in save time
               IF(MOD(time_loop,nsave).EQ.0) THEN
                 dist_ij = sqrt(dist_ij)
-                  ibin=FLOOR((dist_ij)/gr_bin_W)+1
-                  IF (ibin.LE.nGrBins) THEN
-                     g_of_r(ibin)=g_of_r(ibin)+2
-                  END IF
-              END IF ! if save_loop
 
-            END if  ! end if dist_ij < cutoffSQ
+                ! Figure out what g(r) bin we are in
+                ibin=FLOOR((dist_ij)/gr_bin_W)+1
+                IF (ibin.LE.nGrBins) THEN
+                  g_of_r(ibin)=g_of_r(ibin)+2 ! add 2 (i-j, j-i)
+                END IF
+              end IF ! if save_loop
+            END IF ! end if NVE
+
           END do    ! end J
         END DO      ! end I
 
@@ -388,21 +389,21 @@ C       temp = (KE*KE_Temp)
         ! Calculate velocity autocorrelation
         !---------------------------------------------------------------------
        IF (is_NVT == 0) THEN
-        CVV_I1 = mod(time_loop-1,CVV_size)+1
+        CVV_I1 = mod(time_loop-start_NVE-1,CVV_size)+1
         ! Store velocity data
         DO I=1,natom
           DO K=1,3
-            vel_store(CVV_I1,I,K)=vel(I,K)
+            vel_store(CVV_I1,I,K)=vel_half(I,K)
           end DO
         END DO
 
         ! if we have a full set of data, calculate CVV
         if (time_loop > CVV_size+start_NVE) then
-          CVV_I1 = mod(time_loop,CVV_size)+1
+          CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
           DO I=1,natom
             DO K=1,3
               DO CVV_loop = 1,CVV_size
-                CVV_I2 = mod(CVV_loop-1+time_loop, CVV_size)+1
+                CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, CVV_size)+1
                 CVV_data(CVV_loop)=CVV_data(CVV_loop)
      :+vel_store(CVV_I1,I,K)*vel_store(CVV_I2,I,K)
               END DO
@@ -413,7 +414,7 @@ C       temp = (KE*KE_Temp)
         !---------------------------------------------------------------------
         ! Calculate msd
         !---------------------------------------------------------------------
-        MSD_I1=MOD(time_loop-1,num_mds_steps)+1
+        MSD_I1=MOD(time_loop-start_NVE-1,num_mds_steps)+1
         ! Store positions
         DO I=1,natom
             DO K=1,3
@@ -422,12 +423,13 @@ C       temp = (KE*KE_Temp)
          END DO
 
          ! if we have enough positions stored, calculate values
-         IF (time_loop.GE.num_mds_steps) THEN
-           MSD_I1=MOD(time_loop,num_mds_steps)+1
+         IF (time_loop > num_mds_steps+start_NVE) THEN
+           MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
            DO I=1,natom
               DO K=1,3
                   DO MSD_loop=1,num_mds_steps
-                     MSD_I2=MOD(MSD_loop-1+time_loop,num_mds_steps)+1
+                     MSD_I2=MOD(MSD_loop-1+time_loop
+     :-start_NVE,num_mds_steps)+1
                      dist_ij=(p(MSD_I2,I,K)-p(MSD_I1,I,K))**2
                      msd(MSD_loop)=msd(MSD_loop)+ dist_ij
                   END DO
@@ -485,38 +487,38 @@ C       temp = (KE*KE_Temp)
         !---------------------------------------------------------------------
         ! Store system data if we're in a save time
         !---------------------------------------------------------------------
-C         IF(MOD(time_loop,nsave).EQ.0) THEN
-C            IF(is_NVT ==0) THEN
+        IF(MOD(time_loop,nsave).EQ.0) THEN
+           IF(is_NVT ==0) THEN
               
-C               ! Add data to speed distribution
-C               DO I=1,natom
-C                 this_vel = 0.0
-C                 DO K=1,3
-C                   this_vel = this_vel+vel(I,K)*vel(I,K)
-C                 end do
-C                 this_vel = sqrt(this_vel)
-C                 vel_bin=(FLOOR((this_vel-vel_min)/v_bin_width))+1
-C                 IF (vel_bin.LE.vnbin) THEN
-C                   vel_hist(vel_bin)=vel_hist(vel_bin)+1
-C                 END IF
-C               end do
+              ! Add data to speed distribution
+              DO I=1,natom
+                this_vel = 0.0
+                DO K=1,3
+                  this_vel = this_vel+vel_half(I,K)*vel_half(I,K)
+                end do
+                this_vel = sqrt(this_vel)
+                vel_bin=(FLOOR((this_vel-vel_min)/v_bin_width))+1
+                IF (vel_bin.LE.vnbin) THEN
+                  vel_hist(vel_bin)=vel_hist(vel_bin)+1
+                END IF
+              end do
           
 
-C              ! Write coordinates to gromac file
-C              WRITE(91,*)'After step ',time_loop
-C              WRITE(91,*)natom
-C              DO I=1,natom
-C                WRITE(91,31)I,resname,atomname,I,
-C      :(pos(I,K)*1.0E9,K=1,3),
-C      :(vel(I,K)*1.0E-3,K=1,3)
-C               END DO
-C               WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
-C             END IF
-C         END IF
+             ! Write coordinates to gromac file
+             WRITE(91,*)'After step ',time_loop
+             WRITE(91,*)natom
+             DO I=1,natom
+               WRITE(91,31)I,resname,atomname,I,
+     :(pos(I,K)*1.0E9,K=1,3),
+     :(vel(I,K)*1.0E-3,K=1,3)
+              END DO
+              WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
+            END IF
+        END IF
 
 
-C         ! Write energies to file
-C         WRITE(92,*)time,V_tot,KE,V_tot+KE,temp
+        ! Write energies to file
+        WRITE(92,*)time,V_tot,KE,V_tot+KE,temp
       END DO ! End of time loop
 
       !---------------------------------------------------------------------

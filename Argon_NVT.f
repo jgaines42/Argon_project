@@ -230,6 +230,7 @@
       KE = kinetic_energy(natom, vel,massAr)
       temp = (KE*KE_Temp)
       print*,temp
+      
       ! Prevent flying ice cube
       vel_sum(1) = shift_vel_com(natom, vel)
       print*,vel_sum(1)
