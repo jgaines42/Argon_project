@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt   # type: ignore
 # Plot energy
 ##############################################
 
-NVE_START = 0
+NVE_START = 10000
+NUM_RUNS = 500000
+
 data = np.loadtxt('Energies_Ar.txt')
 data[:, 0] = np.multiply(data[:, 0], 1.0E12)    # Change time to ps
 
@@ -45,15 +47,16 @@ data4 = data4*dt_NVE                # Time in NVE
 data2 = np.arange(data1.shape[0])
 data2 = data2*dt_NVT                # Time in NVT
 
+
 # Plot NVE temperature
 plt.figure(figsize=(15,8))
 plt.plot(data4, data3, 'k')
 plt.xlabel('time (ps)')
 plt.ylabel('Temperature (K)')
-plt.axis([0, 500, 86, 100])
-plt.plot([0, 500], [np.mean(data3[10000:50000]),np.mean(data3[10000:50000])], 'r')
-plt.plot([0, 500], [94.4, 94.4], '--r')
-
+plt.axis([0, 5000, 84, 104])
+plt.plot([0, 5000], [np.mean(data3[NVE_START:NUM_RUNS]),np.mean(data3[NVE_START:NUM_RUNS])], 'r')
+plt.plot([0, 5000], [94.4, 94.4], '--r')
+plt.minorticks_on()
 plt.savefig('Ar_Temp_NVE.png', bbox_inches='tight')
 plt.show()
 
@@ -65,7 +68,7 @@ plt.figure(figsize=(15,8))
 plt.plot(data2, data1)
 plt.plot(data4, data3, 'k')
 plt.plot([0, 125], [94.4, 94.4], 'r')
-plt.plot([125, 625], [np.mean(data3),np.mean(data3)], 'r')
+plt.plot([125, 625], [np.mean(data3[NVE_START:NUM_RUNS]),np.mean(data3[NVE_START:NUM_RUNS])], 'r')
 
 plt.axis([0, 625, 86, 100])
 
@@ -75,11 +78,11 @@ plt.savefig('Ar_Temp_all.png', bbox_inches='tight')
 plt.show()
 
 # Print average and std of temp of NVE
-print(np.mean(data3[10000:50000]))
-print(np.std(data3[10000:50000]))
+print(np.mean(data3[NVE_START:NUM_RUNS]))
+print(np.std(data3[NVE_START:NUM_RUNS]))
 
 # Calculate average temp in NVE
-mean_temp = np.mean(data3[10000:50000])
+mean_temp = np.mean(data3[NVE_START:NUM_RUNS])
 
 # Plot 100 time step moving average of Temp
 
@@ -123,14 +126,24 @@ for i in range(1, 600):
     mb[i, 0] = mb[i, 0]                     # P(v) at this time point
     mb[i, 1] = this_v
 
+data_bin2 = np.zeros([300,1])
+mb_bin2 = np.zeros([300,1])
+for i in range(0,300):
+    data_bin2[i] = data[(i*2)]
+    data_bin2[i] = data_bin2[i] = data[(i*2)+1]
+    mb_bin2[i] = mb[i*2,1]+0.5
 # Plot data
 plt.figure(figsize=(15,8))
 plt.rcParams.update({'font.size': 20})
 plt.plot(mb[:, 1], mb[:, 0], 'k')
-plt.plot([TARGET_V, TARGET_V], [0, .005], '--k')
-plt.plot(mb[:,1], data/np.sum(data))
+#plt.plot([TARGET_V, TARGET_V], [0, .005], '--k')
+
+plt.plot(mb_bin2, data_bin2/np.sum(data))
 plt.xlabel('speed (m/s)')
 plt.ylabel('P(speed)  (s/m)')
 plt.axis([0, 600, 0, 0.005])
+plt.xticks(np.arange(0,601, 50))
+plt.minorticks_on()
+
 plt.savefig('Ar_vel_dist.png', bbox_inches='tight')
 plt.show()

@@ -119,10 +119,10 @@
       PARAMETER (sigma2=sigma**2)
 
       REAL*8 massAr                     ! mass of on Ar particle, in kg
-      PARAMETER (massAr=39.95/1000*1.6747E-24)
+      PARAMETER (massAr=39.95/1000*1.6747E-24) ! Taken directly from the paper
 
       INTEGER nstep                     ! number of steps in the simulation
-      PARAMETER (nstep=100000)
+      PARAMETER (nstep=500000)
 
       INTEGER nsave                     ! frequency to save data
       PARAMETER (nsave=10)
@@ -199,7 +199,7 @@
 
       ! Variables for CVV
       INTEGER CVV_size                    ! Number of delta T time points
-      PARAMETER (CVV_size=200)
+      PARAMETER (CVV_size=300)
       REAL*8 vel_store(CVV_size,natom,3)  ! Store last N velocities
       REAL*8 CVV_data(CVV_size)           ! CVV values
       INTEGER CVV_I1, CVV_I2,CVV_loop     ! Looping variables
@@ -217,7 +217,7 @@
 
       ! Variables for mean squared discplcement
       INTEGER num_mds_steps               ! Number of time steps to use
-      PARAMETER (num_mds_steps=300)
+      PARAMETER (num_mds_steps=400)
       INTEGER MSD_I1, MSD_I2, MSD_loop    ! index and loop variables
       REAL*8 msd(num_mds_steps)           ! msd data
       REAL*8 p(num_mds_steps,natom,3)     ! store last N positions
@@ -274,8 +274,11 @@
          END DO
       END DO
 
-      ! Prevent flying ice cube
-      vel_sum = shift_vel_com(natom, vel)
+      KE = kinetic_energy(natom, vel,massAr)
+      temp = (KE*KE_Temp)
+      print*,temp
+      print*,massAr
+      print*,Length
 
        ! Initialize g_of_r data
        DO I=1,nGrBins
@@ -342,7 +345,7 @@
                  force(i,K) = force(i,K) + this_force(K)
                  force(j,K) = force(j,K) - this_force(K)
               END DO ! end K: force vectors
-            END if  ! end if dist_ij < cutoffSQ
+            END IF  ! end if dist_ij < cutoffSQ
 
             IF (is_NVT == 0) THEN
 
@@ -388,55 +391,55 @@
         !---------------------------------------------------------------------
         ! Calculate velocity autocorrelation
         !---------------------------------------------------------------------
-       IF (is_NVT == 0) THEN
-        CVV_I1 = mod(time_loop-start_NVE-1,CVV_size)+1
-        ! Store velocity data
-        DO I=1,natom
-          DO K=1,3
-            vel_store(CVV_I1,I,K)=vel_half(I,K)
-          end DO
-        END DO
-
-        ! if we have a full set of data, calculate CVV
-        if (time_loop > CVV_size+start_NVE) then
-          CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
+        IF (is_NVT == 0) THEN
+          CVV_I1 = mod(time_loop-start_NVE-1,CVV_size)+1
+          ! Store velocity data
           DO I=1,natom
             DO K=1,3
-              DO CVV_loop = 1,CVV_size
-                CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, CVV_size)+1
-                CVV_data(CVV_loop)=CVV_data(CVV_loop)
-     :+vel_store(CVV_I1,I,K)*vel_store(CVV_I2,I,K)
-              END DO
-            END DO
-          END DO 
-        END IF
+              vel_store(CVV_I1,I,K)=vel(I,K)
+            end DO
+          END DO
 
-        !---------------------------------------------------------------------
-        ! Calculate msd
-        !---------------------------------------------------------------------
-        MSD_I1=MOD(time_loop-start_NVE-1,num_mds_steps)+1
-        ! Store positions
-        DO I=1,natom
-            DO K=1,3
-               p(MSD_I1,I,K)=pos(I,K)
-            END DO
-         END DO
-
-         ! if we have enough positions stored, calculate values
-         IF (time_loop > num_mds_steps+start_NVE) THEN
-           MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
-           DO I=1,natom
+          ! if we have a full set of data, calculate CVV
+          if (time_loop > CVV_size+start_NVE) then
+            CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
+            DO I=1,natom
               DO K=1,3
-                  DO MSD_loop=1,num_mds_steps
-                     MSD_I2=MOD(MSD_loop-1+time_loop
+                DO CVV_loop = 1,CVV_size
+                  CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, CVV_size)+1
+                  CVV_data(CVV_loop)=CVV_data(CVV_loop)
+     :+ vel_store(CVV_I1,I,K)*vel_store(CVV_I2,I,K)
+                END DO
+              END DO
+            END DO 
+          END IF
+
+          !---------------------------------------------------------------------
+          ! Calculate msd
+          !---------------------------------------------------------------------
+          MSD_I1=MOD(time_loop-start_NVE-1,num_mds_steps)+1
+          ! Store positions
+          DO I=1,natom
+              DO K=1,3
+                 p(MSD_I1,I,K)=pos(I,K)
+              END DO
+           END DO
+
+           ! if we have enough positions stored, calculate values
+           IF (time_loop > num_mds_steps+start_NVE) THEN
+             MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
+             DO I=1,natom
+                DO K=1,3
+                    DO MSD_loop=1,num_mds_steps
+                       MSD_I2=MOD(MSD_loop-1+time_loop
      :-start_NVE,num_mds_steps)+1
-                     dist_ij=(p(MSD_I2,I,K)-p(MSD_I1,I,K))**2
-                     msd(MSD_loop)=msd(MSD_loop)+ dist_ij
-                  END DO
-               END DO
-            END DO
-         END IF
-      END IF
+                       dist_ij=(p(MSD_I2,I,K)-p(MSD_I1,I,K))**2
+                       msd(MSD_loop)=msd(MSD_loop)+ dist_ij
+                    END DO
+                 END DO
+              END DO
+           END IF
+        END IF ! end IF (is_NVT == 0)
 
 
         !---------------------------------------------------------------------
@@ -456,7 +459,7 @@
             end do
         
           !---------------------------------------------------------------------
-          ! Every 100 time points, shift com of veloctiy to be 0
+          ! Every set number of time points, shift com of veloctiy to be 0
           !---------------------------------------------------------------------
           IF(MOD(time_loop,comShiftTime).EQ.0) THEN
             vel_sum(1) = 0.0
@@ -504,16 +507,16 @@
               end do
           
 
-             ! Write coordinates to gromac file
-             WRITE(91,*)'After step ',time_loop
-             WRITE(91,*)natom
-             DO I=1,natom
-               WRITE(91,31)I,resname,atomname,I,
-     :(pos(I,K)*1.0E9,K=1,3),
-     :(vel(I,K)*1.0E-3,K=1,3)
-              END DO
-              WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
-            END IF
+C              ! Write coordinates to gromac file
+C              WRITE(91,*)'After step ',time_loop
+C              WRITE(91,*)natom
+C              DO I=1,natom
+C                WRITE(91,31)I,resname,atomname,I,
+C      :(pos(I,K)*1.0E9,K=1,3),
+C      :(vel(I,K)*1.0E-3,K=1,3)
+C               END DO
+C               WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
+             END IF
         END IF
 
 

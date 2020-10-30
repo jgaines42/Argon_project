@@ -17,11 +17,11 @@ import math
 data = np.loadtxt('Velocity_Ar.txt')
 
 average_auto = data
-DT = 10.0E-15/(1E-12)       # Time step in ps
-DT_fs = 10.0E-15            # Time step in s
+DT = 4.0E-15/(1E-12)       # Time step in ps
+DT_fs = 4.0E-15            # Time step in s
 NUMBER_ATOMS = 864          # Number of atoms
-NUMBER_TIME = 50000         # Number of time steps
-EQUILIBRIUM_START = 0       # When equlibirum starts (in the NUMBER_TIME)
+NUMBER_TIME = 500000         # Number of time steps
+EQUILIBRIUM_START = 10000       # When equlibirum starts (in the NUMBER_TIME)
 NUMBER_STARTS = NUMBER_TIME - EQUILIBRIUM_START
 
 
@@ -40,21 +40,27 @@ plt.rcParams.update({'font.size': 20})
 plt.xlabel('time (ps)')
 plt.ylabel('$C_{vv}(t), (\mathrm{m^2/s^2})$')
 plt.plot(all_steps,average_auto, 'k')
-plt.plot([0, 1.5], [0, 0])
-plt.axis([0, 1.5, -10000,60000])
-#plt.show()
-plt.savefig('Ar_CVV.png', bbox_inches='tight')
+plt.plot([0, 3], [0, 0])
+plt.xticks(np.arange(0,3.5, 0.5))
 
+plt.axis([0, 3, -10000,60000])
+
+
+plt.savefig('Ar_CVV.png', bbox_inches='tight')
+plt.show()
+print(average_auto[0])
 
 # Plot normalized by dt = 0
 plt.figure(figsize=(15,8))
 plt.plot(all_steps,average_auto/average_auto[0], 'k')
 plt.xlabel('time (ps)')
 plt.ylabel('$C_{vv}(t), (\mathrm{m^2/s^2})$')
-plt.plot([0, 1.5], [0, 0])
-plt.axis([0, 1.5, -0.2,1])
-#plt.show()
+plt.plot([0, 3], [0, 0])
+plt.axis([0, 3, -0.2,1])
+plt.xticks(np.arange(0,3.5, 0.5))
+
 plt.savefig('Ar_CVV_normalized.png', bbox_inches='tight')
+plt.show()
 
 np.savetxt('Ar_CVV_data.txt', average_auto)
 
@@ -65,15 +71,18 @@ for i in range(0,len(average_auto)):
     all_steps[i] = i*DT_fs         # in s
 
 # Fit tail of data to exponential
-popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[100:200], average_auto[100:200], p0=[-20000,-3E12])
+print(all_steps[150])
+popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[150:300], average_auto[150:300], p0=[-20000,-3E12])
 perr_exponential = np.sqrt(np.diag(pcov_exponential))
 print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
 print("rate constant = %0.2f (+/-) %0.2f" % (popt_exponential[1], perr_exponential[1]))
 
 # Plot exponential equation compared to data
 plt.figure(figsize=(15,8))
-plt.plot(all_steps[40:200], exponential(all_steps[40:200], popt_exponential[0], popt_exponential[1]), 'k--')
-plt.plot(all_steps[40:200],average_auto[40:200])
+plt.plot(all_steps[40:300], exponential(all_steps[40:300], popt_exponential[0], popt_exponential[1]), 'k--')
+plt.plot(all_steps[40:300],average_auto[40:300])
+plt.savefig('cvv_fit.png', bbox_inches='tight')
+
 plt.show()
 
 
@@ -85,8 +94,8 @@ a = popt_exponential[0] # m^2
 # Integrate from all_steps[150] to infinity
 # intergral -> 1/k *exp(kx)
 
-end_step = all_steps[199]+DT_fs
-integral_15 = np.sum(average_auto[0:200])*DT_fs     # m^2/s
+end_step = all_steps[299]+DT_fs
+integral_15 = np.sum(average_auto[0:300])*DT_fs     # m^2/s
 integral_15p = 0.0-(1.0/k*a*math.exp(k*end_step))   # m^2/ps
 
 print(integral_15*(100*100) )

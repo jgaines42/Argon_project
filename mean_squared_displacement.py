@@ -12,18 +12,20 @@ from scipy import optimize
 
 data = np.loadtxt('Mean_squared_displacement_Ar.txt')
 
-DT = 10.0E-15
+DT = 4E-15
 natoms = 864
-num_runs = 50000
-all_steps = np.zeros(300)
+num_runs = 500000-10000
+num_msd = 400
+all_steps = np.zeros(num_msd)
 
 # Normalize data
-for step_loop in range(0, 300):
+for step_loop in range(0, num_msd):
     all_steps[step_loop] = step_loop*DT*1E12                 # time in ps
     data[step_loop] = data[step_loop]/natoms/num_runs*(1E20) # mean squared displacement in Angstroms^2
 
 # Fit linear section to calculate diffusion coeficient
-popt_linear, pcov_linear = scipy.optimize.curve_fit(linear, all_steps[150:300], data[150:300], p0=[8000.0, 0])
+print(all_steps[250])
+popt_linear, pcov_linear = scipy.optimize.curve_fit(linear, all_steps[250:num_msd], data[250:num_msd], p0=[8000.0, 0])
 perr_linear = np.sqrt(np.diag(pcov_linear))
 print("slope = %0.2f (+/-) %0.2f" % (popt_linear[0], perr_linear[0]))
 print("intercept= %0.2f (+/-) %0.2f" % (popt_linear[1], perr_linear[1]))
@@ -37,12 +39,14 @@ print(diffusion*100.0*100.0*(1E12)/(1E20)) # Difusion in cm^2/s
 plt.figure(figsize=(15,8))
 plt.rcParams.update({'font.size': 20})
 plt.plot(all_steps,data, 'k',label='Data')
-plt.plot([0, 3],[b,b+3.0*m], '--b',label='Fit')
-plt.axis([0, 3, 0, 5])
+plt.plot([0, all_steps[num_msd-1]],[b,b+all_steps[num_msd-1]*m], '--b',label='Fit')
+#plt.axis([0, 4, 0, 7])
+#plt.xticks(np.arange(0,4.5, 0.5))
+#plt.yticks(np.arange(0,7.5, 1))
 plt.xlabel('Time (ps)')
 plt.ylabel('Mean squared displacement ($\AA ^2$)')
 plt.legend(loc='center right')
-
+plt.minorticks_on()
 plt.savefig('Ar_msd.png', bbox_inches='tight')
 
 plt.show()
