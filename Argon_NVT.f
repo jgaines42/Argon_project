@@ -4,7 +4,7 @@
       ! Input:
       !   natoms: number of atoms in the system
       !   vel1: (natoms,3) velocities of all atoms
-      !   massAr: Mass of 1 atom
+      !   mass: Mass of 1 atom
       !
       ! Output:
       !   ke: Total kinetic energy in the system
@@ -14,6 +14,7 @@
         REAL*8, intent(in) :: vel1(natoms,3)  ! velocity array
         REAL*8, intent(in) :: mass            ! mass of 1  atom
         REAL*8             :: ke              ! output
+        
         INTEGER I,K
         ke=0.0
 
@@ -26,10 +27,20 @@
         END DO
         ke = 0.5*ke*mass            ! calculate kinetic energy
       end function
-
+      
 
       !-------------------------------------------------------------
-      ! function shift_vel_com
+      ! function shift_vel_com: Shift all velocites to remove global shift
+      !
+      ! Input:
+      !   natom: number of atoms in the sytem
+      !   vel: (natom,3) velocity of each atom
+      !
+      ! Modifies:
+      !   vel: updated with new velocities
+      !   
+      ! Output:
+      !   amount_moved: the value of the change in v_x 
       !-------------------------------------------------------------
       function shift_vel_com(natom, vel) result(amount_moved)  
         INTEGER, intent(in):: natom           ! number of atoms
@@ -37,10 +48,12 @@
         REAL*8 vel_sum(3)                     ! value to shift by
         REAL*8 amount_moved                   ! vel_sum(1) 
         INTEGER I,K
+        
         vel_sum(1) = 0.0
         vel_sum(2) = 0.0
         vel_sum(3) = 0.0
 
+        ! Loop over all atoms and find center of mass of velocties
         DO I=1,natom
            DO K=1,3                           ! Loop over x,y,z components
               vel_sum(K)=vel_sum(K)+vel(I,K)  ! Calculate total velocity of system
@@ -51,15 +64,17 @@
         vel_sum(1) = vel_sum(1)/natom
         vel_sum(2) = vel_sum(2)/natom
         vel_sum(3) = vel_sum(3)/natom
-   
+
         ! shift velocity to keep whole system from moving in a direction
         DO I=1,natom                          ! Loop over all atoms
            DO K=1,3                           ! Loop over x,y,z components
              vel(I,K) = vel(I,K)-vel_sum(K) ! shift velocity
            END DO
         END DO
-        amount_moved=vel_sum(1)
+
+        amount_moved = vel_sum(1)
       end function
+
 
       !-------------------------------------------------------------
       ! Argon_simulation
@@ -106,7 +121,7 @@
       PARAMETER (sigma2=sigma**2)
 
       REAL*8 massAr                     ! mass of on Ar particle, in kg
-      PARAMETER (massAr=39.95/1000*1.6747E-24)
+      PARAMETER (massAr=39.95/1000*1.6747E-24) ! Taken directly from the paper
 
       INTEGER nstep                     ! number of steps in the simulation
       PARAMETER (nstep=100000)
@@ -115,7 +130,7 @@
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=150)
+      PARAMETER (comShiftTime=111)
 
       REAL*8 DT                         ! time step, in seconds
       PARAMETER (DT=10.0E-15) 
@@ -221,7 +236,7 @@
       DO I=1,natom
          DO K=1,3                           ! Loop over x,y,z components
             pos(I,K)=pos(I,K)*1.0E-9        ! from nm to m
-            vel(I,K)=vel(I,K)*1.0E2         ! from 10*nm/ps to m/s
+            vel(I,K)=vel(I,K)*1.0E3         ! from 10*nm/ps to m/s
             accel(I,K) = 0.0                ! initialize acceleration to 0
             force(I,K) = 0.0                ! initialize forces to 0
          END DO
@@ -313,7 +328,7 @@
         ! If we're in NVT, scale velocity to keep set temperature
         !---------------------------------------------------------------------
         IF (is_NVT == 1) THEN
-            KE = kinetic_energy(natom, vel,massAr)
+            KE = kinetic_energy(natom, vel_half,massAr)
             temp = (KE*KE_Temp)
             is_NVT_scale = sqrt(Tref/temp)  ! Scale for velocity
 

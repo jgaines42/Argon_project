@@ -135,7 +135,7 @@
 
 
                 WRITE(91,31)icount,resname,atomname,icount,x,y,z,
-     :10.0*vx,10.0*vy,10.0*vz
+     :vx,vy,vz
                 WRITE(92,31)icount,resname,atomname,icount,10.0*vx,
      :10.0*vy,10.0*vz,vx,vy,vz
                 icount=icount+1

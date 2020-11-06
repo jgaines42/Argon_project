@@ -48,6 +48,7 @@
         REAL*8 vel_sum(3)                     ! value to shift by
         REAL*8 amount_moved                   ! vel_sum(1) 
         INTEGER I,K
+        
         vel_sum(1) = 0.0
         vel_sum(2) = 0.0
         vel_sum(3) = 0.0
@@ -128,7 +129,7 @@
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=110)
+      PARAMETER (comShiftTime=111)
 
       REAL*8 DT                         ! time step, in seconds
       PARAMETER (DT=10.0E-15) 
@@ -159,7 +160,7 @@
       REAL*8 Length                     ! Length of the box
 
       ! Create arrays for coordinates and velocities
-      REAL*8 pos(natom,3),vel(natom,3) ! 3 for x,y,z directions
+      REAL*8 pos(natom,3),vel(natom,3)
       REAL*8 vel_old(natom,3),vel_half(natom,3)
 
       ! Set to NVE or NVT, 0 if NVE, 1 for NVT
@@ -203,6 +204,7 @@
       REAL*8 vel_store(CVV_size,natom,3)  ! Store last N velocities
       REAL*8 CVV_data(CVV_size)           ! CVV values
       INTEGER CVV_I1, CVV_I2,CVV_loop     ! Looping variables
+      INTEGER CVV_count                   ! Keep track of how many CVV
 
       ! Variables for velocity distribution
       REAL*8 vel_min                      ! left most bin
@@ -221,6 +223,7 @@
       INTEGER MSD_I1, MSD_I2, MSD_loop    ! index and loop variables
       REAL*8 msd(num_mds_steps)           ! msd data
       REAL*8 p(num_mds_steps,natom,3)     ! store last N positions
+      Integer MSD_Count                   ! Keep track of how many MSD
 
       ! reading in/values from input file
       INTEGER idum ! loop/array variables / dummy integer
@@ -244,7 +247,9 @@
       V_tot = 0.0
       start_NVE = 10000                       ! Start in NVT to check equilibration
       time = 0.0
-      
+      CVV_count = 0
+      MSD_Count = 0
+
       !-------------------------------------------------------------
       ! Read in initial file
       !-------------------------------------------------------------
@@ -280,8 +285,8 @@
       print*,massAr
       print*,Length
 
-       ! Initialize g_of_r data
-       DO I=1,nGrBins
+      ! Initialize g_of_r data
+      DO I=1,nGrBins
          g_of_r(i) = 0.0
          bin_ends(i) = (gr_bin_W*I)
        END DO
@@ -303,7 +308,7 @@
         time = time+dt                       ! Calculate current time
 
         ! Change to NVE after start_NVE
-        if (time_loop > start_NVE) then
+        if (time_loop >= start_NVE) then
           is_NVT=0
         end if
 
@@ -373,9 +378,9 @@
 
         DO I=1,natom
            DO K=1,3
-             accel(I,K) =force(I,K)/massAr                  ! Acceleration based on force
+             accel(I,K) = force(I,K)/massAr                  ! Acceleration based on force
              vel_old(I,K) = vel(I,K)                        ! Store old velocity
-             vel(I,K)=vel(I,K) + DT*accel(I,K)              ! Get new velocity (at t+0.tdt)
+             vel(I,K) = vel(I,K) + DT*accel(I,K)              ! Get new velocity (at t+0.tdt)
              pos(I,K) = pos(I,K) + DT*vel(I,K)              ! Get new position (at t+dt)
              vel_half(I,K) = (vel(I,K) + vel_old(I,K))*0.5  ! Get velocity at (t+dt) for KE
              force(I,K) = 0.0                               ! reset force array for next time loop
@@ -402,6 +407,7 @@
 
           ! if we have a full set of data, calculate CVV
           if (time_loop > CVV_size+start_NVE) then
+            CVV_count = CVV_count + 1
             CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
             DO I=1,natom
               DO K=1,3
@@ -427,6 +433,7 @@
 
            ! if we have enough positions stored, calculate values
            IF (time_loop > num_mds_steps+start_NVE) THEN
+             MSD_Count= MSD_Count + 1
              MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
              DO I=1,natom
                 DO K=1,3
@@ -447,7 +454,7 @@
         !---------------------------------------------------------------------
         IF (is_NVT == 1) THEN
             
-            KE = kinetic_energy(natom, vel,massAr)
+            KE = kinetic_energy(natom, vel_half,massAr)
             temp = (KE*KE_Temp)
             is_NVT_scale = sqrt(Tref/temp)  ! Scale for velocity
 
@@ -538,12 +545,12 @@ C               WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
       END DO
 
       ! Write CVV data
-      DO I=1,CVV_size
+      DO I=1,CVV_size+1
         WRITE(95,*)CVV_data(I)
       END DO
 
       ! Write mds data
-      DO I=1,num_mds_steps
+      DO I=1,num_mds_steps+1
         WRITE(96,*)msd(I)
       END DO
 

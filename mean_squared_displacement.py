@@ -12,10 +12,14 @@ from scipy import optimize
 
 data = np.loadtxt('Mean_squared_displacement_Ar.txt')
 
-DT = 4E-15
+DT = 10E-15
 natoms = 864
-num_runs = 500000-10000
+
 num_msd = 400
+num_runs = 500000-10000-num_msd
+print(num_runs)
+num_runs = data[data.shape[0]]
+print(num_runs)
 all_steps = np.zeros(num_msd)
 
 # Normalize data

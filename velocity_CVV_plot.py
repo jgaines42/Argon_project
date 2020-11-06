@@ -17,12 +17,12 @@ import math
 data = np.loadtxt('Velocity_Ar.txt')
 
 average_auto = data
-DT = 4.0E-15/(1E-12)       # Time step in ps
-DT_fs = 4.0E-15            # Time step in s
+DT = 10.0E-15/(1E-12)       # Time step in ps
+DT_fs = 10.0E-15            # Time step in s
 NUMBER_ATOMS = 864          # Number of atoms
 NUMBER_TIME = 500000         # Number of time steps
 EQUILIBRIUM_START = 10000       # When equlibirum starts (in the NUMBER_TIME)
-NUMBER_STARTS = NUMBER_TIME - EQUILIBRIUM_START
+NUMBER_STARTS = NUMBER_TIME - EQUILIBRIUM_START-len(data)
 
 
 # Normalilze data by the number of time steps in it and the number of atoms
@@ -43,7 +43,7 @@ plt.plot(all_steps,average_auto, 'k')
 plt.plot([0, 3], [0, 0])
 plt.xticks(np.arange(0,3.5, 0.5))
 
-plt.axis([0, 3, -10000,60000])
+#plt.axis([0, 3, -10000,60000])
 
 
 plt.savefig('Ar_CVV.png', bbox_inches='tight')

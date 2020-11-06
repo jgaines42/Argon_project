@@ -35,7 +35,6 @@ for i in range(1, nbins):
 print(step)
 # Scale g(r)
 for i in range(1, nbins):
-   # g_of_r[i] = (results[i])*Volume/(scale_factor[i])/NUM_TIME_STEPS
     g_of_r[i] = (results[i])/scale_factor[i]
 
 # Plot
