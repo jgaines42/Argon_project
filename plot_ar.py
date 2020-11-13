@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt   # type: ignore
 # Plot energy
 ##############################################
 
-NVE_START = 10000
-NUM_RUNS = 500000
-
+NVE_START = 20000
+NUM_RUNS = 100000
+NUM_ATOMS = 864
+massAr=39.95/1000*1.6747E-24
 data = np.loadtxt('Energies_Ar.txt')
 data[:, 0] = np.multiply(data[:, 0], 1.0E12)    # Change time to ps
 
@@ -83,7 +84,11 @@ print(np.std(data3[NVE_START:NUM_RUNS]))
 
 # Calculate average temp in NVE
 mean_temp = np.mean(data3[NVE_START:NUM_RUNS])
+eq_v = (3/2)*NUM_ATOMS*(1.38064852E-23)*mean_temp/massAr
+print(eq_v)
 
+eq_v = (3.0*(1.38064852E-23)*mean_temp/massAr)
+print(eq_v)
 # Plot 100 time step moving average of Temp
 
 temp_binned = np.zeros(data3.shape[0])
@@ -95,7 +100,7 @@ data4 = np.arange(data3.shape[0])
 data4 = data4*dt_NVE  
 plt.plot(data4[100:data3.shape[0]-1], temp_binned[100:data3.shape[0]-1])
 print(np.mean(temp_binned[100:data3.shape[0]-1]))
-plt.axis([0, 500, 86, 100])
+plt.axis([0, NUM_RUNS/100, 86, 100])
 plt.xlabel('time (ps)')
 plt.ylabel('Temperature (K)')
 plt.savefig('Ar_Temp_moveAvg.png', bbox_inches='tight')
@@ -126,19 +131,14 @@ for i in range(1, 600):
     mb[i, 0] = mb[i, 0]                     # P(v) at this time point
     mb[i, 1] = this_v
 
-data_bin2 = np.zeros([300,1])
-mb_bin2 = np.zeros([300,1])
-for i in range(0,300):
-    data_bin2[i] = data[(i*2)]
-    data_bin2[i] = data_bin2[i] = data[(i*2)+1]
-    mb_bin2[i] = mb[i*2,1]+0.5
+
 # Plot data
 plt.figure(figsize=(15,8))
 plt.rcParams.update({'font.size': 20})
 plt.plot(mb[:, 1], mb[:, 0], 'k')
 #plt.plot([TARGET_V, TARGET_V], [0, .005], '--k')
 
-plt.plot(mb_bin2, data_bin2/np.sum(data))
+plt.plot(mb[:,1], data/np.sum(data))
 plt.xlabel('speed (m/s)')
 plt.ylabel('P(speed)  (s/m)')
 plt.axis([0, 600, 0, 0.005])

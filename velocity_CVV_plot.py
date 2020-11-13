@@ -16,14 +16,19 @@ import math
 # Velocity_Ar.txt is the autocorrelation data from the run
 data = np.loadtxt('Velocity_Ar.txt')
 
-average_auto = data
 DT = 10.0E-15/(1E-12)       # Time step in ps
 DT_fs = 10.0E-15            # Time step in s
 NUMBER_ATOMS = 864          # Number of atoms
-NUMBER_TIME = 500000         # Number of time steps
-EQUILIBRIUM_START = 10000       # When equlibirum starts (in the NUMBER_TIME)
+NUMBER_TIME = 200000         # Number of time steps
+EQUILIBRIUM_START = 20000       # When equlibirum starts (in the NUMBER_TIME)
 NUMBER_STARTS = NUMBER_TIME - EQUILIBRIUM_START-len(data)
-
+print(NUMBER_STARTS)
+NUMBER_STARTS = data[data.shape[0]-1]
+print(NUMBER_STARTS)
+data = data[0:data.shape[0]-1]
+print(data.shape[0])
+print(len(data))
+average_auto = data
 
 # Normalilze data by the number of time steps in it and the number of atoms
 average_auto = np.divide(average_auto, NUMBER_STARTS)
@@ -43,12 +48,12 @@ plt.plot(all_steps,average_auto, 'k')
 plt.plot([0, 3], [0, 0])
 plt.xticks(np.arange(0,3.5, 0.5))
 
-#plt.axis([0, 3, -10000,60000])
+plt.axis([0, 3, -10000,60000])
 
 
 plt.savefig('Ar_CVV.png', bbox_inches='tight')
 plt.show()
-print(average_auto[0])
+print(average_auto[1])
 
 # Plot normalized by dt = 0
 plt.figure(figsize=(15,8))
@@ -71,8 +76,8 @@ for i in range(0,len(average_auto)):
     all_steps[i] = i*DT_fs         # in s
 
 # Fit tail of data to exponential
-print(all_steps[150])
-popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[150:300], average_auto[150:300], p0=[-20000,-3E12])
+print(all_steps[100])
+popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[100:300], average_auto[100:300], p0=[-20000,-3E12])
 perr_exponential = np.sqrt(np.diag(pcov_exponential))
 print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
 print("rate constant = %0.2f (+/-) %0.2f" % (popt_exponential[1], perr_exponential[1]))

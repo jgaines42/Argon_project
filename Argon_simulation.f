@@ -123,13 +123,13 @@
       PARAMETER (massAr=39.95/1000*1.6747E-24) ! Taken directly from the paper
 
       INTEGER nstep                     ! number of steps in the simulation
-      PARAMETER (nstep=500000)
+      PARAMETER (nstep=300000)
 
       INTEGER nsave                     ! frequency to save data
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=111)
+      PARAMETER (comShiftTime=101)
 
       REAL*8 DT                         ! time step, in seconds
       PARAMETER (DT=10.0E-15) 
@@ -245,7 +245,7 @@
       is_NVT=1
       KE = 0.0
       V_tot = 0.0
-      start_NVE = 10000                       ! Start in NVT to check equilibration
+      start_NVE = 20000                       ! Start in NVT to check equilibration
       time = 0.0
       CVV_count = 0
       MSD_Count = 0
@@ -308,7 +308,7 @@
         time = time+dt                       ! Calculate current time
 
         ! Change to NVE after start_NVE
-        if (time_loop >= start_NVE) then
+        if (time_loop > start_NVE) then
           is_NVT=0
         end if
 
@@ -406,13 +406,14 @@
           END DO
 
           ! if we have a full set of data, calculate CVV
-          if (time_loop > CVV_size+start_NVE) then
+          if (time_loop-start_NVE > CVV_size) then
             CVV_count = CVV_count + 1
             CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
             DO I=1,natom
               DO K=1,3
                 DO CVV_loop = 1,CVV_size
-                  CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, CVV_size)+1
+                  CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, 
+     :CVV_size)+1
                   CVV_data(CVV_loop)=CVV_data(CVV_loop)
      :+ vel_store(CVV_I1,I,K)*vel_store(CVV_I2,I,K)
                 END DO
@@ -432,7 +433,7 @@
            END DO
 
            ! if we have enough positions stored, calculate values
-           IF (time_loop > num_mds_steps+start_NVE) THEN
+           IF (time_loop-start_NVE > num_mds_steps) THEN
              MSD_Count= MSD_Count + 1
              MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
              DO I=1,natom
@@ -484,7 +485,7 @@
             vel_sum(1) = vel_sum(1)/natom
             vel_sum(2) = vel_sum(2)/natom
             vel_sum(3) = vel_sum(3)/natom
-
+            print*,vel_sum(1),vel_sum(2),vel_sum(3)
             ! shift velocity to keep whole system from moving in a direction
             DO I=1,natom                          ! Loop over all atoms
                DO K=1,3                           ! Loop over x,y,z components
@@ -545,14 +546,16 @@ C               WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
       END DO
 
       ! Write CVV data
-      DO I=1,CVV_size+1
+      DO I=1,CVV_size
         WRITE(95,*)CVV_data(I)
       END DO
+      WRITE(95,*)CVV_count
 
       ! Write mds data
-      DO I=1,num_mds_steps+1
+      DO I=1,num_mds_steps
         WRITE(96,*)msd(I)
       END DO
+      WRITE(96,*)MSD_Count
 
   31  FORMAT(i5,2a5,i5,3f8.4,3f8.4) ! format of input file
 
