@@ -10,6 +10,8 @@
       !   ke: Total kinetic energy in the system
       !-------------------------------------------------------------
       function kinetic_energy(natoms, vel1, mass) result(ke)
+        IMPLICIT NONE
+
         INTEGER, intent(in):: natoms          ! number of atoms
         REAL*8, intent(in) :: vel1(natoms,3)  ! velocity array
         REAL*8, intent(in) :: mass            ! mass of 1  atom
@@ -43,6 +45,8 @@
       !   amount_moved: the value of the change in v_x 
       !-------------------------------------------------------------
       function shift_vel_com(natom, vel) result(amount_moved)  
+        IMPLICIT NONE
+        
         INTEGER, intent(in):: natom           ! number of atoms
         REAL*8             :: vel(natom,3)    ! velocity array
         REAL*8 vel_sum(3)                     ! value to shift by
@@ -56,7 +60,7 @@
         ! Loop over all atoms and find center of mass of velocties
         DO I=1,natom
            DO K=1,3                           ! Loop over x,y,z components
-              vel_sum(K)=vel_sum(K)+vel(I,K)  ! Calculate total velocity of system
+              vel_sum(K) = vel_sum(K)+vel(I,K)  ! Calculate total velocity of system
            END DO
         END DO
 
@@ -123,16 +127,16 @@
       PARAMETER (massAr=39.95/1000*1.6747E-24) ! Taken directly from the paper
 
       INTEGER nstep                     ! number of steps in the simulation
-      PARAMETER (nstep=300000)
+      PARAMETER (nstep=400000)
 
       INTEGER nsave                     ! frequency to save data
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=101)
+      PARAMETER (comShiftTime=111)
 
       REAL*8 DT                         ! time step, in seconds
-      PARAMETER (DT=10.0E-15) 
+      PARAMETER (DT=5.0E-15) 
 
       REAL*8 cutoff,cutoffSQ            ! cutoffs for energy equations
       PARAMETER (cutoff=2.25*sigma,cutoffSQ=cutoff**2)
@@ -219,7 +223,7 @@
 
       ! Variables for mean squared discplcement
       INTEGER num_mds_steps               ! Number of time steps to use
-      PARAMETER (num_mds_steps=400)
+      PARAMETER (num_mds_steps=800)
       INTEGER MSD_I1, MSD_I2, MSD_loop    ! index and loop variables
       REAL*8 msd(num_mds_steps)           ! msd data
       REAL*8 p(num_mds_steps,natom,3)     ! store last N positions
@@ -245,7 +249,7 @@
       is_NVT=1
       KE = 0.0
       V_tot = 0.0
-      start_NVE = 20000                       ! Start in NVT to check equilibration
+      start_NVE = 0                       ! Start in NVT to check equilibration
       time = 0.0
       CVV_count = 0
       MSD_Count = 0
@@ -273,7 +277,7 @@
       DO I=1,natom
          DO K=1,3                           ! Loop over x,y,z components
             pos(I,K)=pos(I,K)*1.0E-9        ! from nm to m
-            vel(I,K)=vel(I,K)*1.0E2         ! to m/s
+            vel(I,K)=vel(I,K)*1.0E3         ! to m/s
             accel(I,K) = 0.0                ! initialize acceleration to 0
             force(I,K) = 0.0                ! initialize forces to 0
          END DO
@@ -289,17 +293,17 @@
       DO I=1,nGrBins
          g_of_r(i) = 0.0
          bin_ends(i) = (gr_bin_W*I)
-       END DO
+      END DO
        
-       ! Initialize CVV data
-       DO I=1,CVV_size
-          CVV_data(I)=0.0
-       end DO
+      ! Initialize CVV data
+      DO I=1,CVV_size
+         CVV_data(I)=0.0
+      end DO
 
-       ! Initialize msd data
-       DO I=1,num_mds_steps
-          msd(I)=0.0
-       end DO
+      ! Initialize msd data
+      DO I=1,num_mds_steps
+         msd(I)=0.0
+      end DO
 
       !--------------------------------------------
       ! Progress system in time
@@ -334,6 +338,7 @@
 
             ! If within a certain distance, calculate force
             if (dist_ij <= cutoffSQ) then
+              
               sr_6 = (sigma2/dist_ij)**3
               sr_12 = sr_6**2
 
@@ -397,7 +402,7 @@
         ! Calculate velocity autocorrelation
         !---------------------------------------------------------------------
         IF (is_NVT == 0) THEN
-          CVV_I1 = mod(time_loop-start_NVE-1,CVV_size)+1
+          CVV_I1 = mod(time_loop-1,CVV_size)+1
           ! Store velocity data
           DO I=1,natom
             DO K=1,3
@@ -406,13 +411,13 @@
           END DO
 
           ! if we have a full set of data, calculate CVV
-          if (time_loop-start_NVE > CVV_size) then
+          if (time_loop > CVV_size) then
             CVV_count = CVV_count + 1
-            CVV_I1 = mod(time_loop-start_NVE,CVV_size)+1
+            CVV_I1 = mod(time_loop,CVV_size)+1
             DO I=1,natom
               DO K=1,3
                 DO CVV_loop = 1,CVV_size
-                  CVV_I2 = mod(CVV_loop-1+time_loop-start_NVE, 
+                  CVV_I2 = mod(CVV_loop-1+time_loop, 
      :CVV_size)+1
                   CVV_data(CVV_loop)=CVV_data(CVV_loop)
      :+ vel_store(CVV_I1,I,K)*vel_store(CVV_I2,I,K)
@@ -424,7 +429,7 @@
           !---------------------------------------------------------------------
           ! Calculate msd
           !---------------------------------------------------------------------
-          MSD_I1=MOD(time_loop-start_NVE-1,num_mds_steps)+1
+          MSD_I1=MOD(time_loop-1,num_mds_steps)+1
           ! Store positions
           DO I=1,natom
               DO K=1,3
@@ -433,14 +438,14 @@
            END DO
 
            ! if we have enough positions stored, calculate values
-           IF (time_loop-start_NVE > num_mds_steps) THEN
+           IF (time_loop > num_mds_steps) THEN
              MSD_Count= MSD_Count + 1
-             MSD_I1=MOD(time_loop-start_NVE,num_mds_steps)+1
+             MSD_I1=MOD(time_loop,num_mds_steps)+1
              DO I=1,natom
                 DO K=1,3
                     DO MSD_loop=1,num_mds_steps
                        MSD_I2=MOD(MSD_loop-1+time_loop
-     :-start_NVE,num_mds_steps)+1
+     :,num_mds_steps)+1
                        dist_ij=(p(MSD_I2,I,K)-p(MSD_I1,I,K))**2
                        msd(MSD_loop)=msd(MSD_loop)+ dist_ij
                     END DO
@@ -515,15 +520,15 @@
               end do
           
 
-C              ! Write coordinates to gromac file
-C              WRITE(91,*)'After step ',time_loop
-C              WRITE(91,*)natom
-C              DO I=1,natom
-C                WRITE(91,31)I,resname,atomname,I,
-C      :(pos(I,K)*1.0E9,K=1,3),
-C      :(vel(I,K)*1.0E-3,K=1,3)
-C               END DO
-C               WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
+             ! Write coordinates to gromac file
+             WRITE(91,*)'After step ',time_loop
+             WRITE(91,*)natom
+             DO I=1,natom
+               WRITE(91,31)I,resname,atomname,I,
+     :(pos(I,K)*1.0E9,K=1,3),
+     :(vel(I,K)*1.0E-3,K=1,3)
+              END DO
+              WRITE(91,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
              END IF
         END IF
 

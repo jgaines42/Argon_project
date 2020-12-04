@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt   # type: ignore
 # Plot energy
 ##############################################
 
-NVE_START = 20000
-NUM_RUNS = 100000
+NVE_START = 0
+NUM_RUNS = 400000
 NUM_ATOMS = 864
 massAr=39.95/1000*1.6747E-24
 data = np.loadtxt('Energies_Ar.txt')
@@ -37,9 +37,9 @@ plt.show()
 ##############################################
 # Plot Temperature
 ##############################################
-
-dt_NVT = (10.0E-15)*1.0E12          # Timestep in NVT in ps
-dt_NVE = (10.0E-15)*1.0E12          # Timestep in NVE in ps
+dt = 5.0E-15
+dt_NVT = (dt)*1.0E12          # Timestep in NVT in ps
+dt_NVE = (dt)*1.0E12          # Timestep in NVE in ps
 data1 = np.loadtxt('Temp_NVT.txt')  # NVT Temp
 data3 = np.loadtxt('Temp_Ar.txt')   # NVE Temp
 
@@ -48,15 +48,15 @@ data4 = data4*dt_NVE                # Time in NVE
 data2 = np.arange(data1.shape[0])
 data2 = data2*dt_NVT                # Time in NVT
 
-
+print(data4[1:10])
 # Plot NVE temperature
 plt.figure(figsize=(15,8))
 plt.plot(data4, data3, 'k')
 plt.xlabel('time (ps)')
 plt.ylabel('Temperature (K)')
-plt.axis([0, NUM_RUNS/100, 84, 104])
-plt.plot([0, NUM_RUNS/100], [np.mean(data3[NVE_START:NUM_RUNS]),np.mean(data3[NVE_START:NUM_RUNS])], 'r')
-plt.plot([0, NUM_RUNS/100], [94.4, 94.4], '--r')
+plt.axis([0, NUM_RUNS/100/2, 84, 104])
+plt.plot([0, NUM_RUNS/100/2], [np.mean(data3[NVE_START:NUM_RUNS]),np.mean(data3[NVE_START:NUM_RUNS])], 'r')
+plt.plot([0, NUM_RUNS/100/2], [94.4, 94.4], '--r')
 plt.minorticks_on()
 plt.savefig('Ar_Temp_NVE.png', bbox_inches='tight')
 plt.show()

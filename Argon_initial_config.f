@@ -47,15 +47,13 @@
       REAL*8 dist_unit ! distance between unit cells
       PARAMETER (dist_unit=Length/6.0)
 
-      INTEGER repeats
-      PARAMETER (repeats = 6)
+      INTEGER repeats ! Number of copies of the unit cell in each direction
+      PARAMETER (repeats = 6) 
 
       ! Create unit cell
-      REAL*8 unit_cell(4,3) ! sum of the total force on each particle
-
+      REAL*8 unit_cell(4,3)
 
       REAL phi,theta,costheta ! for generating random vectors
-
 
       REAL scaled ! the value that the random vectors are scaled by
 
@@ -86,7 +84,7 @@
 
       print*,massAr
       print*,Length
-      print*,(massAr*natom/(Length*Length*Length))
+      print*,(massAr*natom/(Length*Length*Length)) ! Density
       iseed=36
 
       OPEN(91,FILE="Argon_864_initial_coordinates.gro") !open output file
@@ -94,11 +92,12 @@
       WRITE(91,*)'A box of liquid Ar'
       WRITE(91,*)natom
 
-      OPEN(92,FILE="Argon_864_initial_velocity.gro") !open output file
+      OPEN(92,FILE="Argon_864_initial_velocity.gro") !open velocity output file
       WRITE(92,*)'A box of liquid Ar'
       WRITE(92,*)natom
 
       icount=1      ! stores which atom we are on
+
       ! Loop over all repeats of the unit cell
       DO I=1,repeats
          dx=REAL(I-1)*dist_unit
@@ -108,6 +107,7 @@
               dz=REAL(K-1)*dist_unit
 
               ! Now that we know the displacements of the unit cell, move each atom
+              ! Loop over all 4 atoms in the unit cell
               DO M=1,4
                 x=dx+unit_cell(M,1)
                 y=dy+unit_cell(M,2)
@@ -134,19 +134,19 @@
                 vz=vz*vrms ! scale the z vector
 
 
+                ! Write to file, change velocity to pm/ns
                 WRITE(91,31)icount,resname,atomname,icount,x,y,z,
      :vx,vy,vz
-                WRITE(92,31)icount,resname,atomname,icount,10.0*vx,
-     :10.0*vy,10.0*vz,vx,vy,vz
+                WRITE(92,31)icount,resname,atomname,icount,vx,
+     :vy,vz,vx,vy,vz
                 icount=icount+1
-C                IF(icount.GT.natom) THEN
-C                  GO TO 51
-C                END IF
+
               END DO
           END DO
         END DO
       END DO
 
+      ! Write box length to end of file
   51  WRITE(91,*)Length,Length,Length
       WRITE(92,*)Length,Length,Length
 

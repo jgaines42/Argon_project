@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt  # type: ignore
 # Column 2: number of points in that bin
 data = np.loadtxt('G_r_Ar.txt')
 
-NUM_TIME_STEPS = (500000-10000)/10         # Number of time steps
+NUM_TIME_STEPS = (400000)/10         # Number of time steps
 SIGMA = 0.34E-9             
 
 data[:, 0] = data[:, 0]/(1.0E-10)#/SIGMA       # Convert distance to units of sigma 

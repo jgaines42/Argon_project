@@ -16,16 +16,15 @@ import math
 # Velocity_Ar.txt is the autocorrelation data from the run
 data = np.loadtxt('Velocity_Ar.txt')
 
-DT = 10.0E-15/(1E-12)       # Time step in ps
-DT_fs = 10.0E-15            # Time step in s
+DT = 5.0E-15/(1E-12)       # Time step in ps
+DT_fs = 5.0E-15            # Time step in s
 NUMBER_ATOMS = 864          # Number of atoms
-NUMBER_TIME = 200000         # Number of time steps
-EQUILIBRIUM_START = 20000       # When equlibirum starts (in the NUMBER_TIME)
-NUMBER_STARTS = NUMBER_TIME - EQUILIBRIUM_START-len(data)
-print(NUMBER_STARTS)
+NUMBER_TIME = 400000         # Number of time steps
+EQUILIBRIUM_START = 0       # When equlibirum starts (in the NUMBER_TIME)
+
 NUMBER_STARTS = data[data.shape[0]-1]
 print(NUMBER_STARTS)
-data = data[0:data.shape[0]-1]
+data = data[0:data.shape[0]-1].copy()
 print(data.shape[0])
 print(len(data))
 average_auto = data
@@ -84,8 +83,8 @@ print("rate constant = %0.2f (+/-) %0.2f" % (popt_exponential[1], perr_exponenti
 
 # Plot exponential equation compared to data
 plt.figure(figsize=(15,8))
-plt.plot(all_steps[40:300], exponential(all_steps[40:300], popt_exponential[0], popt_exponential[1]), 'k--')
-plt.plot(all_steps[40:300],average_auto[40:300])
+plt.plot(all_steps[90:300], exponential(all_steps[90:300], popt_exponential[0], popt_exponential[1]), 'k--')
+plt.plot(all_steps[90:300],average_auto[90:300])
 plt.savefig('cvv_fit.png', bbox_inches='tight')
 
 plt.show()

@@ -10,6 +10,8 @@
       !   ke: Total kinetic energy in the system
       !-------------------------------------------------------------
       function kinetic_energy(natoms, vel1, mass) result(ke)
+        IMPLICIT NONE
+
         INTEGER, intent(in):: natoms          ! number of atoms
         REAL*8, intent(in) :: vel1(natoms,3)  ! velocity array
         REAL*8, intent(in) :: mass            ! mass of 1  atom
@@ -43,6 +45,7 @@
       !   amount_moved: the value of the change in v_x 
       !-------------------------------------------------------------
       function shift_vel_com(natom, vel) result(amount_moved)  
+        IMPLICIT NONE
         INTEGER, intent(in):: natom           ! number of atoms
         REAL*8             :: vel(natom,3)    ! velocity array
         REAL*8 vel_sum(3)                     ! value to shift by
@@ -130,22 +133,22 @@
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=111)
+      PARAMETER (comShiftTime = 111)
 
       REAL*8 DT                         ! time step, in seconds
-      PARAMETER (DT=10.0E-15) 
+      PARAMETER (DT = 10.0E-15) 
 
       REAL*8 cutoff,cutoffSQ            ! cutoffs for energy equations
-      PARAMETER (cutoff=2.25*sigma,cutoffSQ=cutoff**2)
+      PARAMETER (cutoff = 2.25*sigma,cutoffSQ=cutoff**2)
 
       REAL*8 Tref                       ! the reference temprerature, in K
-      PARAMETER (Tref=94.400000)
+      PARAMETER (Tref = 94.400000)
 
       REAL*8 eps4                       ! epsilon*4 for potential energy
       PARAMETER (eps4 = 4.0*eps)
 
       REAL*8 eps24                      ! epsilon*24 for force
-      PARAMETER (eps24=24.0*eps)
+      PARAMETER (eps24 = 24.0*eps)
 
       INTEGER nDOF                      ! DOF of each atom
       PARAMETER (nDOF = 3)
@@ -236,7 +239,7 @@
       DO I=1,natom
          DO K=1,3                           ! Loop over x,y,z components
             pos(I,K)=pos(I,K)*1.0E-9        ! from nm to m
-            vel(I,K)=vel(I,K)*1.0E3         ! from 10*nm/ps to m/s
+            vel(I,K)=vel(I,K)*1.0E3         ! from nm/ps to m/s
             accel(I,K) = 0.0                ! initialize acceleration to 0
             force(I,K) = 0.0                ! initialize forces to 0
          END DO
@@ -270,23 +273,26 @@
 
             ! Loop over x,y,z components
             DO K=1,3
+
               ! get distance vector between atoms
-              rij(K)= pos(I,K)-pos(J,K)
-              rij(K)= rij(K)-length*ANINT(rij(K)/Length)
+              rij(K) = pos(I,K)-pos(J,K)
+              rij(K) = rij(K)-length*ANINT(rij(K)/Length)
               dist_ij = dist_ij + rij(K)*rij(K)
+
             END DO ! end K: calculate dist_ij
 
             ! If within a certain distance, calculate force
             if (dist_ij <= cutoffSQ) then
+              
               sr_6 = (sigma2/dist_ij)**3
               sr_12 = sr_6**2
 
               ! Calculate potential energy and add to total of system
-              V_ij=eps4*(sr_12-sr_6)
-              V_tot=V_tot+V_ij
+              V_ij = eps4*(sr_12-sr_6)
+              V_tot = V_tot+V_ij
 
               ! Calculate magnitude of force
-              F_ij=-eps24*(-2.0*sr_12+sr_6)/dist_ij
+              F_ij = -eps24*(-2.0*sr_12+sr_6)/dist_ij
 
               ! Add force vector to i and j
               DO K=1,3
@@ -328,7 +334,7 @@
         ! If we're in NVT, scale velocity to keep set temperature
         !---------------------------------------------------------------------
         IF (is_NVT == 1) THEN
-            KE = kinetic_energy(natom, vel_half,massAr)
+            KE = kinetic_energy(natom, vel,massAr)
             temp = (KE*KE_Temp)
             is_NVT_scale = sqrt(Tref/temp)  ! Scale for velocity
 
@@ -341,7 +347,7 @@
         end if
 
         !---------------------------------------------------------------------
-        ! Every 100 time points, shift com of veloctiy to be 0
+        ! Every set number of time points, shift com of veloctiy to be 0
         !---------------------------------------------------------------------
         IF(MOD(time_loop,comShiftTime).EQ.0) THEN
           vel_sum = shift_vel_com(natom, vel)
@@ -373,7 +379,7 @@
       DO I=1,natom
         WRITE(98,31)I,resname,atomname,I,
      :(pos(I,K)*1.0E9,K=1,3),
-     :(vel(I,K)*1.0E-2,K=1,3)
+     :(vel(I,K)*1.0E-3,K=1,3)
       END DO
       WRITE(98,*)Length*1.0E9,Length*1.0E9,Length*1.0E9
 
