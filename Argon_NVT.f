@@ -46,6 +46,7 @@
       !-------------------------------------------------------------
       function shift_vel_com(natom, vel) result(amount_moved)  
         IMPLICIT NONE
+
         INTEGER, intent(in):: natom           ! number of atoms
         REAL*8             :: vel(natom,3)    ! velocity array
         REAL*8 vel_sum(3)                     ! value to shift by
@@ -59,7 +60,7 @@
         ! Loop over all atoms and find center of mass of velocties
         DO I=1,natom
            DO K=1,3                           ! Loop over x,y,z components
-              vel_sum(K)=vel_sum(K)+vel(I,K)  ! Calculate total velocity of system
+              vel_sum(K) = vel_sum(K)+vel(I,K)  ! Calculate total velocity of system
            END DO
         END DO
 
@@ -95,7 +96,6 @@
 
       PROGRAM Argon_simulation
 
-      ! Based on code from Stephanie Kearing
       IMPLICIT NONE
 
       ! Declare functions
@@ -127,13 +127,13 @@
       PARAMETER (massAr=39.95/1000*1.6747E-24) ! Taken directly from the paper
 
       INTEGER nstep                     ! number of steps in the simulation
-      PARAMETER (nstep=100000)
+      PARAMETER (nstep=200000)
 
       INTEGER nsave                     ! frequency to save data
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime = 111)
+      PARAMETER (comShiftTime = 113)
 
       REAL*8 DT                         ! time step, in seconds
       PARAMETER (DT = 10.0E-15) 
@@ -211,7 +211,7 @@
       ! Set initial system variables
       !-------------------------------------------------------------
 
-      is_NVT=1
+      is_NVT = 1
       KE = 0.0
       V_tot = 0.0
       time = 0.0
@@ -245,7 +245,7 @@
          END DO
       END DO
 
-      KE = kinetic_energy(natom, vel,massAr)
+      KE = kinetic_energy(natom, vel, massAr)
       temp = (KE*KE_Temp)
       print*,temp
       
@@ -275,8 +275,8 @@
             DO K=1,3
 
               ! get distance vector between atoms
-              rij(K) = pos(I,K)-pos(J,K)
-              rij(K) = rij(K)-length*ANINT(rij(K)/Length)
+              rij(K) = pos(I,K) - pos(J,K)
+              rij(K) = rij(K) - length*ANINT(rij(K)/Length)
               dist_ij = dist_ij + rij(K)*rij(K)
 
             END DO ! end K: calculate dist_ij
@@ -351,6 +351,7 @@
         !---------------------------------------------------------------------
         IF(MOD(time_loop,comShiftTime).EQ.0) THEN
           vel_sum = shift_vel_com(natom, vel)
+          print*,vel_sum
         END IF
 
 

@@ -37,7 +37,7 @@ plt.show()
 ##############################################
 # Plot Temperature
 ##############################################
-dt = 5.0E-15
+dt = 10.0E-15
 dt_NVT = (dt)*1.0E12          # Timestep in NVT in ps
 dt_NVE = (dt)*1.0E12          # Timestep in NVE in ps
 data1 = np.loadtxt('Temp_NVT.txt')  # NVT Temp

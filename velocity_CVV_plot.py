@@ -1,5 +1,5 @@
 ###################################################
-# Plot CVV autocorrelation
+# Plot CVV autocorrelation using data generated in fortran code
 ############################################
 
 # Define to fit exponential
@@ -16,8 +16,8 @@ import math
 # Velocity_Ar.txt is the autocorrelation data from the run
 data = np.loadtxt('Velocity_Ar.txt')
 
-DT = 5.0E-15/(1E-12)       # Time step in ps
-DT_fs = 5.0E-15            # Time step in s
+DT = 10.0E-15/(1E-12)       # Time step in ps
+DT_fs = 10.0E-15            # Time step in s
 NUMBER_ATOMS = 864          # Number of atoms
 NUMBER_TIME = 400000         # Number of time steps
 EQUILIBRIUM_START = 0       # When equlibirum starts (in the NUMBER_TIME)
@@ -75,8 +75,12 @@ for i in range(0,len(average_auto)):
     all_steps[i] = i*DT_fs         # in s
 
 # Fit tail of data to exponential
-print(all_steps[100])
-popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[100:300], average_auto[100:300], p0=[-20000,-3E12])
+fit_start = 100
+fit_end = len(data)
+
+print(all_steps[fit_start])
+print(all_steps[fit_end-1])
+popt_exponential, pcov_exponential = scipy.optimize.curve_fit(exponential, all_steps[fit_start:fit_end], average_auto[fit_start:fit_end], p0=[-20000,-3E12])
 perr_exponential = np.sqrt(np.diag(pcov_exponential))
 print("pre-exponential factor = %0.2f (+/-) %0.2f" % (popt_exponential[0], perr_exponential[0]))
 print("rate constant = %0.2f (+/-) %0.2f" % (popt_exponential[1], perr_exponential[1]))

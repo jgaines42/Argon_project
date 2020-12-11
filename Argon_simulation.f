@@ -133,10 +133,10 @@
       PARAMETER (nsave=10)
 
       INTEGER comShiftTime              ! frequency to shift com of velocity
-      PARAMETER (comShiftTime=111)
+      PARAMETER (comShiftTime=113)
 
       REAL*8 DT                         ! time step, in seconds
-      PARAMETER (DT=5.0E-15) 
+      PARAMETER (DT=10.0E-15) 
 
       REAL*8 cutoff,cutoffSQ            ! cutoffs for energy equations
       PARAMETER (cutoff=2.25*sigma,cutoffSQ=cutoff**2)
@@ -204,7 +204,7 @@
 
       ! Variables for CVV
       INTEGER CVV_size                    ! Number of delta T time points
-      PARAMETER (CVV_size=300)
+      PARAMETER (CVV_size=500)
       REAL*8 vel_store(CVV_size,natom,3)  ! Store last N velocities
       REAL*8 CVV_data(CVV_size)           ! CVV values
       INTEGER CVV_I1, CVV_I2,CVV_loop     ! Looping variables
@@ -223,7 +223,7 @@
 
       ! Variables for mean squared discplcement
       INTEGER num_mds_steps               ! Number of time steps to use
-      PARAMETER (num_mds_steps=800)
+      PARAMETER (num_mds_steps=500)
       INTEGER MSD_I1, MSD_I2, MSD_loop    ! index and loop variables
       REAL*8 msd(num_mds_steps)           ! msd data
       REAL*8 p(num_mds_steps,natom,3)     ! store last N positions
@@ -246,7 +246,7 @@
       !-------------------------------------------------------------
       ! Set initial system variables
       !-------------------------------------------------------------
-      is_NVT=1
+      is_NVT=0
       KE = 0.0
       V_tot = 0.0
       start_NVE = 0                       ! Start in NVT to check equilibration
@@ -330,10 +330,12 @@
 
             ! Loop over x,y,z components
             DO K=1,3
+
               ! get distance vector between atoms
               rij(K) = pos(I,K) - pos(J,K)
               rij(K) = rij(K) - Length*ANINT(rij(K)/Length)
               dist_ij = dist_ij + rij(K)*rij(K)
+
             END DO ! end K: calculate dist_ij
 
             ! If within a certain distance, calculate force
@@ -369,6 +371,7 @@
                   g_of_r(ibin)=g_of_r(ibin)+2 ! add 2 (i-j, j-i)
                 END IF
               end IF ! if save_loop
+
             END IF ! end if NVE
 
           END do    ! end J
@@ -403,6 +406,7 @@
         !---------------------------------------------------------------------
         IF (is_NVT == 0) THEN
           CVV_I1 = mod(time_loop-1,CVV_size)+1
+          
           ! Store velocity data
           DO I=1,natom
             DO K=1,3

@@ -16,53 +16,55 @@
 
       ! Initiate constants
       REAL*8 NA
-      PARAMETER (NA=6.02214076D23)
+      PARAMETER (NA=6.02214076E23)
       REAL*8 PI
       PARAMETER (PI=4.0*atan(1.0))
       REAL*8 BOLTZ
       PARAMETER (BOLTZ=1.38064852D-23) ! in J/K
 
       ! Set initial parameters for our system
-      INTEGER natom ! the number of atoms in the simulation
+      INTEGER natom         ! the number of atoms in the simulation
       PARAMETER (natom=864) ! From rahman64
 
-      REAL*8 massAr ! mass of the particle
+      REAL*8 massAr                            ! mass of the particle
       PARAMETER (massAr=39.95/1000*1.6747E-24) ! in kg from kg/mol rahman64
 
-      REAL*8 Tref !the reference temprerature for the thermostat
+      REAL*8 Tref                !the reference temprerature for the thermostat
       PARAMETER (Tref=94.400000) ! in K from Rahman64
 
-      REAL*8 Length ! Length of the box
-      PARAMETER (Length=3.478) ! in nm from Raham64
-
-      REAL vrms ! target average final_velocity
+      REAL vrms                  ! target average final_velocity
       PARAMETER (vrms = sqrt(3.0*BOLTZ*Tref/massAr)/1000) ! velocity in nm/ps
 
-      REAL*8 sigma ! sigma value for calculating LJ potential
+      REAL*8 sigma           ! sigma value for calculating LJ potential
       PARAMETER (sigma=0.34) ! sigma in nm, from rahman64
 
-      REAL*8 dist_part ! distance between particles in unit cell
-      PARAMETER (dist_part=Length/12.0)!sigma/sqrt(2.0))
+      REAL*8 Length                   ! Length of the box
+      PARAMETER (Length=sigma*10.229) ! in nm from Raham64
 
-      REAL*8 dist_unit ! distance between unit cells
+      ! Set up unit cell variables
+      REAL*8 dist_part                ! distance between particles in unit cell
+      PARAMETER (dist_part=Length/12.0)
+
+      REAL*8 dist_unit                ! distance between unit cells
       PARAMETER (dist_unit=Length/6.0)
 
-      INTEGER repeats ! Number of copies of the unit cell in each direction
+      INTEGER repeats                 ! Number of copies of the unit cell in each direction
       PARAMETER (repeats = 6) 
 
-      ! Create unit cell
-      REAL*8 unit_cell(4,3)
+      
+      REAL*8 unit_cell(4,3)           ! Create unit cell
 
-      REAL phi,theta,costheta ! for generating random vectors
+      REAL phi,theta,costheta         ! for generating random vectors
 
-      REAL scaled ! the value that the random vectors are scaled by
+      REAL scaled                     ! the value that the random vectors are scaled by
 
-      REAL vx,vy,vz !velocity vectors in the x,y,z directions
-      REAL rand_mag ! the magnitude of the x,y,z velocity vectors
+      REAL vx,vy,vz                   !velocity vectors in the x,y,z directions
+      REAL rand_mag                   ! the magnitude of the x,y,z velocity vectors
 
       CHARACTER*5 resname,atomname
       PARAMETER (resname='   Ar',atomname='   Ar')
 
+      ! Coordinate data
       INTEGER icount
       REAL x,y,z
       REAL dx,dy,dz
@@ -82,11 +84,10 @@
       unit_cell(4,1) = dist_part
       unit_cell(4,2) = dist_part
 
-      print*,massAr
-      print*,Length
-      print*,(massAr*natom/(Length*Length*Length)) ! Density
+
       iseed=36
 
+      ! Open files
       OPEN(91,FILE="Argon_864_initial_coordinates.gro") !open output file
 
       WRITE(91,*)'A box of liquid Ar'

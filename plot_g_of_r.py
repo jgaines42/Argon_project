@@ -13,8 +13,8 @@ data = np.loadtxt('G_r_Ar.txt')
 NUM_TIME_STEPS = (400000)/10         # Number of time steps
 SIGMA = 0.34E-9             
 
-data[:, 0] = data[:, 0]/(1.0E-10)#/SIGMA       # Convert distance to units of sigma 
-LENGTH = (3.478E-9)/(1.0E-10)#/SIGMA           # Calculate volume in units of sigma
+data[:, 0] = data[:, 0]/(1.0E-10)    # Convert distance to units of sigma 
+LENGTH = (3.47786E-9)/(1.0E-10)      # Calculate volume in units of sigma
 Volume = LENGTH*LENGTH*LENGTH
 NATOMS = 864
 
@@ -30,9 +30,7 @@ print(step)
 for i in range(1, nbins):
     expected = NATOMS*np.pi*4.0/Volume*((i*step+step)**3-(i*step)**3 )/3
     scale_factor[i] = expected*NUM_TIME_STEPS*NATOMS
-    #scale_factor[i] = NATOMS*NATOMS*4.0*np.pi*step*(i*step)**2
    
-print(step)
 # Scale g(r)
 for i in range(1, nbins):
     g_of_r[i] = (results[i])/scale_factor[i]
